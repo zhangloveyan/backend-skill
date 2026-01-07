@@ -73,7 +73,7 @@ APP_API_PORT=9502
 NGINX_HTTP_PORT=80
 NGINX_HTTPS_PORT=443
 SPRING_PROFILES_ACTIVE=prod
-JAVA_OPTS=-Xms512m -Xmx1024m -XX:+UseG1GC
+JAVA_OPTS=-Xms1g -Xmx2g -XX:+UseG1GC
 
 # ========== MySQL 配置 ==========
 MYSQL_HOST=mysql
@@ -100,6 +100,13 @@ JWT_SECRET=your_jwt_secret_key
 # ========== 时区 ==========
 TZ=Asia/Shanghai
 ```
+
+### 3.2 多环境/多客户配置管理（方案A）
+
+- 使用 `envs/` 管理不同环境/客户的 `.env` 文件。
+- 命名建议：环境 `.env.dev`、`.env.test`、`.env.prod`；客户 `.env.company-a`、`.env.company-b`；环境+客户 `.env.prod.company-a`。
+- 使用方式：`docker-compose --env-file envs/.env.prod up -d` 或 `docker-compose --env-file envs/.env.prod.company-a up -d`。
+- 仅提交 `envs/.env.template`，真实配置不入库。
 
 ---
 
@@ -316,9 +323,36 @@ volumes:
 
 ---
 
-## 6. Nginx 配置
+## 6. Dockerfile 模板使用说明
 
-### 6.1 nginx.conf
+### 6.1 模板占位符
+
+- `{JAR_FILE}`：Jar 文件路径（相对于构建上下文）
+- `{APP_PORT}`：容器内应用端口
+- `{maintainer}`：维护者邮箱/标识
+
+### 6.2 使用示例
+
+```bash
+# 示例：构建 admin 服务
+docker build \
+  --build-arg JAR_FILE=target/project-admin.jar \
+  --build-arg APP_PORT=9501 \
+  --build-arg maintainer=dev@example.com \
+  -f docker/app/Dockerfile \
+  -t project-admin:latest .
+```
+
+### 6.3 注意事项
+
+- `COPY ${JAR_FILE}` 依赖构建上下文内已存在该 Jar 文件。
+- 如需不同 JVM 参数，请通过 `JAVA_OPTS` 覆盖。
+
+---
+
+## 7. Nginx 配置
+
+### 7.1 nginx.conf
 
 ```nginx
 # docker/nginx/nginx.conf
@@ -363,7 +397,7 @@ http {
 }
 ```
 
-### 6.2 站点配置 (conf.d/default.conf)
+### 7.2 站点配置 (conf.d/default.conf)
 
 ```nginx
 # docker/nginx/conf.d/default.conf
@@ -411,9 +445,9 @@ server {
 
 ---
 
-## 7. 部署脚本
+## 8. 部署脚本
 
-### 7.1 deploy.sh
+### 8.1 deploy.sh
 
 ```bash
 #!/bin/bash
@@ -478,7 +512,7 @@ main() {
 main "$@"
 ```
 
-### 7.2 backup.sh
+### 8.2 backup.sh
 
 ```bash
 #!/bin/bash
@@ -501,7 +535,7 @@ echo "备份完成: $BACKUP_DIR/mysql_$DATE.sql"
 
 ---
 
-## 8. 常用命令
+## 9. 常用命令
 
 ```bash
 # 启动所有服务
@@ -533,9 +567,9 @@ docker stats
 
 ---
 
-## 9. 私有化部署方案
+## 10. 私有化部署方案
 
-### 9.1 目录结构
+### 10.1 目录结构
 
 ```
 docker/
@@ -549,7 +583,7 @@ docker/
     └── deploy.sh              # 部署脚本
 ```
 
-### 9.2 环境变量模板 (.env.template)
+### 10.2 环境变量模板 (.env.template)
 
 ```bash
 # ========== 客户信息 ==========
@@ -590,7 +624,7 @@ JWT_SECRET=change_me_jwt_secret_key
 
 # ========== 应用配置 ==========
 SPRING_PROFILES_ACTIVE=prod
-JAVA_OPTS=-Xms512m -Xmx1024m -XX:+UseG1GC
+JAVA_OPTS=-Xms1g -Xmx2g -XX:+UseG1GC
 TZ=Asia/Shanghai
 
 # ========== 域名配置 ==========
@@ -598,7 +632,7 @@ DOMAIN_ADMIN=admin.${CUSTOMER_CODE}.example.com
 DOMAIN_API=api.${CUSTOMER_CODE}.example.com
 ```
 
-### 9.3 客户配置示例
+### 10.3 客户配置示例
 
 **A公司配置 (.env.company-a)**
 ```bash
@@ -632,7 +666,7 @@ DOMAIN_ADMIN=admin.company-b.example.com
 DOMAIN_API=api.company-b.example.com
 ```
 
-### 9.4 部署命令
+### 10.4 部署命令
 
 ```bash
 # 部署 A 公司
@@ -651,7 +685,7 @@ docker-compose --env-file envs/.env.company-b logs -f
 docker-compose --env-file envs/.env.company-a down
 ```
 
-### 9.5 私有化部署脚本
+### 10.5 私有化部署脚本
 
 ```bash
 #!/bin/bash
@@ -684,7 +718,7 @@ docker-compose --env-file $ENV_FILE ps
 echo "Deployment completed for: $CUSTOMER"
 ```
 
-### 9.6 注意事项
+### 10.6 注意事项
 
 1. **密码安全**：每个客户使用独立的强密码
 2. **数据隔离**：每个客户使用独立的数据库
