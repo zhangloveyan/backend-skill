@@ -520,3 +520,164 @@ docker exec -it myproject-redis redis-cli
 # 查看资源使用
 docker stats
 ```
+
+---
+
+## 9. 私有化部署方案
+
+### 9.1 目录结构
+
+```
+docker/
+├── envs/
+│   ├── .env.template          # 环境变量模板
+│   ├── .env.company-a         # A公司配置
+│   ├── .env.company-b         # B公司配置
+│   └── .env.company-c         # C公司配置
+├── docker-compose.yml         # 通用编排文件
+└── scripts/
+    └── deploy.sh              # 部署脚本
+```
+
+### 9.2 环境变量模板 (.env.template)
+
+```bash
+# ========== 客户信息 ==========
+CUSTOMER_NAME=company-name
+CUSTOMER_CODE=company-code
+
+# ========== 项目配置 ==========
+PROJECT_NAME=myproject
+COMPOSE_PROJECT_NAME=${CUSTOMER_CODE}-myproject
+
+# ========== 端口配置 ==========
+APP_ADMIN_PORT=9501
+APP_API_PORT=9502
+MYSQL_PORT=3306
+REDIS_PORT=6379
+NGINX_HTTP_PORT=80
+NGINX_HTTPS_PORT=443
+
+# ========== 数据库配置 ==========
+MYSQL_HOST=mysql
+MYSQL_DATABASE=${CUSTOMER_CODE}_db
+MYSQL_ROOT_PASSWORD=change_me_root_password
+MYSQL_USER=app_user
+MYSQL_PASSWORD=change_me_app_password
+
+# ========== Redis 配置 ==========
+REDIS_HOST=redis
+REDIS_PASSWORD=change_me_redis_password
+
+# ========== MQTT 配置 ==========
+MQTT_HOST=emqx
+MQTT_PORT=1883
+MQTT_USERNAME=admin
+MQTT_PASSWORD=change_me_mqtt_password
+
+# ========== JWT 配置 ==========
+JWT_SECRET=change_me_jwt_secret_key
+
+# ========== 应用配置 ==========
+SPRING_PROFILES_ACTIVE=prod
+JAVA_OPTS=-Xms512m -Xmx1024m -XX:+UseG1GC
+TZ=Asia/Shanghai
+
+# ========== 域名配置 ==========
+DOMAIN_ADMIN=admin.${CUSTOMER_CODE}.example.com
+DOMAIN_API=api.${CUSTOMER_CODE}.example.com
+```
+
+### 9.3 客户配置示例
+
+**A公司配置 (.env.company-a)**
+```bash
+CUSTOMER_NAME=A科技有限公司
+CUSTOMER_CODE=company-a
+COMPOSE_PROJECT_NAME=company-a-myproject
+
+MYSQL_DATABASE=company_a_db
+MYSQL_ROOT_PASSWORD=CompanyA_Root_2024!
+MYSQL_PASSWORD=CompanyA_App_2024!
+REDIS_PASSWORD=CompanyA_Redis_2024!
+JWT_SECRET=CompanyA_JWT_Secret_Key_2024
+
+DOMAIN_ADMIN=admin.company-a.example.com
+DOMAIN_API=api.company-a.example.com
+```
+
+**B公司配置 (.env.company-b)**
+```bash
+CUSTOMER_NAME=B集团
+CUSTOMER_CODE=company-b
+COMPOSE_PROJECT_NAME=company-b-myproject
+
+MYSQL_DATABASE=company_b_db
+MYSQL_ROOT_PASSWORD=CompanyB_Root_2024!
+MYSQL_PASSWORD=CompanyB_App_2024!
+REDIS_PASSWORD=CompanyB_Redis_2024!
+JWT_SECRET=CompanyB_JWT_Secret_Key_2024
+
+DOMAIN_ADMIN=admin.company-b.example.com
+DOMAIN_API=api.company-b.example.com
+```
+
+### 9.4 部署命令
+
+```bash
+# 部署 A 公司
+docker-compose --env-file envs/.env.company-a up -d
+
+# 部署 B 公司
+docker-compose --env-file envs/.env.company-b up -d
+
+# 查看 A 公司服务状态
+docker-compose --env-file envs/.env.company-a ps
+
+# 查看 B 公司日志
+docker-compose --env-file envs/.env.company-b logs -f
+
+# 停止 A 公司服务
+docker-compose --env-file envs/.env.company-a down
+```
+
+### 9.5 私有化部署脚本
+
+```bash
+#!/bin/bash
+# scripts/deploy-customer.sh
+
+CUSTOMER=$1
+ENV_FILE="envs/.env.${CUSTOMER}"
+
+if [ -z "$CUSTOMER" ]; then
+    echo "Usage: $0 <customer-code>"
+    echo "Example: $0 company-a"
+    exit 1
+fi
+
+if [ ! -f "$ENV_FILE" ]; then
+    echo "Error: Environment file not found: $ENV_FILE"
+    exit 1
+fi
+
+echo "Deploying for customer: $CUSTOMER"
+echo "Using env file: $ENV_FILE"
+
+# 部署
+docker-compose --env-file $ENV_FILE pull
+docker-compose --env-file $ENV_FILE up -d
+
+# 显示状态
+docker-compose --env-file $ENV_FILE ps
+
+echo "Deployment completed for: $CUSTOMER"
+```
+
+### 9.6 注意事项
+
+1. **密码安全**：每个客户使用独立的强密码
+2. **数据隔离**：每个客户使用独立的数据库
+3. **端口规划**：多客户部署在同一服务器时需规划端口
+4. **备份策略**：按客户独立备份数据
+5. **配置管理**：.env 文件不要提交到版本库
