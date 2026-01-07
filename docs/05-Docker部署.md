@@ -10,6 +10,14 @@
 
 ---
 
+## 使用说明（模板）
+
+- 本文档内容为模板示例，实际使用需根据项目调整。
+- 必须替换：`PROJECT_NAME`、端口、数据库/缓存账号、JWT 密钥、MQTT 账号等敏感配置。
+- 服务裁剪：未使用的服务（如 `emqx`、`prometheus`、`grafana`）可删除对应服务与卷。
+- Nginx 路由需与接口规范保持一致（`/{project}/{端类型}/v{版本}`），并替换配置中的 `{project}`。
+- 脚本中的容器名/目录需与 `PROJECT_NAME`、实际部署目录一致。
+
 ## 1. 服务清单
 
 | 服务 | 镜像 | 端口 | 说明 |
@@ -62,6 +70,8 @@ COMPOSE_PROJECT_NAME=myproject
 # ========== 应用配置 ==========
 APP_ADMIN_PORT=9501
 APP_API_PORT=9502
+NGINX_HTTP_PORT=80
+NGINX_HTTPS_PORT=443
 SPRING_PROFILES_ACTIVE=prod
 JAVA_OPTS=-Xms512m -Xmx1024m -XX:+UseG1GC
 
@@ -231,8 +241,8 @@ services:
     container_name: ${PROJECT_NAME}-nginx
     restart: always
     ports:
-      - "80:80"
-      - "443:443"
+      - "${NGINX_HTTP_PORT}:80"
+      - "${NGINX_HTTPS_PORT}:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./nginx/conf.d:/etc/nginx/conf.d
@@ -369,8 +379,8 @@ server {
     listen 80;
     server_name localhost;
 
-    # 管理后台
-    location /admin/ {
+    # 管理后台（匹配 /{project}/web/...）
+    location /{project}/web/ {
         proxy_pass http://admin_server/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -380,9 +390,9 @@ server {
         proxy_read_timeout 60s;
     }
 
-    # API 接口
-    location /api/ {
-        proxy_pass http://api_server/api/;
+    # API 接口（匹配 /{project}/api/...）
+    location /{project}/api/ {
+        proxy_pass http://api_server/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
