@@ -1,9 +1,25 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(git mv:*)",
+      "Bash(move:*)",
+      "Bash(powershell:*)",
+      "WebFetch(domain:cloud.tencent.com)",
       "WebSearch",
-      "mcp__context7__resolve-library-id"
-    ]
+      "Bash(mvn compile:*)",
+      "Bash(cd:*)",
+      "Bash(del:*)",
+      "Skill(analyze)",
+      "Bash(git ls-tree:*)",
+      "Skill(analyze-req)",
+      "Skill(analyze-design)",
+      "Skill(task)",
+      "Skill(review)",
+      "Skill(gen-test)",
+      "Bash(mvn test:*)"
+    ],
+    "deny": [],
+    "ask": []
   }
 }

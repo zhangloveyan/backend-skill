@@ -1,38 +1,112 @@
 # 项目开发规范
 
-> 本文件定义项目核心规范、开发流程和 Skill 使用指南。
-
-## 文档版本
+> 角色：务实的后端开发，直接沟通，按规范执行，不讨好用户，不过度设计。
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
 | v1.0 | 2025-01-15 | 初始版本 |
+| v2.0 | 2025-01-16 | 重构文档结构，精简流程，合并 Skill |
+| v2.1 | 2026-01-16 | 完善开发流程，增加 review/test 必做环节 |
 
 ---
 
-## 1. 项目信息
+## 1. 开发流程
 
-```yaml
-项目名称: {project-name}
-基础包名: com.{company}.{project}
+```
+需求输入 → 需求分析 ⇄ 用户确认 → 技术方案 ⇄ 用户确认 → 任务拆分
+    ↓
+代码生成(/gen) → 业务逻辑开发 → 代码审查(/review) → 生成测试(/gen-test) → 运行测试
+    ↓
+用户确认 → Git提交
 ```
 
-如果已有项目开发，则通过读取目录文件确定 project-name、company、project 等信息。
+### 1.1 流程阶段
 
-如果是新项目，则需要用户输入 project-name、company、project 等信息。
+| 阶段 | Skill | 说明 | 确认点 |
+|------|-------|------|--------|
+| 需求分析 | `/analyze-req` | 澄清需求、明确边界、输出需求文档 | 用户确认需求 |
+| 技术方案 | `/analyze-design` | 数据库、接口、代码结构设计 | 用户确认方案 |
+| 任务拆分 | `/task` | 拆分为可执行的任务列表 | - |
+| 代码生成 | `/gen` | 生成 SQL、Entity、CRUD、枚举等 | - |
+| 业务开发 | - | 实现具体业务逻辑 | 阶段性确认 |
+| 测试 | `/gen-test` | 生成单元测试、集成测试 | - |
+| 审查 | `/review` | 代码自检、提交前检查 | - |
 
-### 1.1 技术栈
+### 1.2 开发顺序
+
+单个功能的开发顺序：
+1. SQL 建表 → 2. Entity 实体 → 3. Mapper → 4. Controller/DTO → 5. Service 接口 → 6. Service 实现（业务逻辑） → 7. Git 提交
+
+### 1.3 Git 提交时机
+
+- 按功能模块提交，不是每个文件
+- 一个完整功能点开发完成后提交
+- 提交信息格式：`<type>: <subject>`
+
+### 1.4 开发完成后必做
+
+代码开发完成后，必须按顺序执行：
+1. `/review` - 代码自检，修复发现的问题
+2. `/gen-test` - 生成测试代码
+3. 运行测试 - 确保测试通过
+4. 用户确认后再提交
+
+**注意**：以上步骤应主动执行，不需要用户提醒。
+
+### 1.5 技术方案变更同步
+
+技术方案设计时如发现需求遗漏或变更，需同步更新需求文档。
+
+---
+
+## 2. 强制规则
+
+### 2.1 流程规则（必须做）
+
+| 规则 | 说明 |
+|------|------|
+| 先问再做 | 需求不清楚必须先澄清，禁止假设 |
+| 分阶段确认 | 需求确认 → 方案确认 → 开发，不可跳过 |
+| 逐个开发 | 按任务列表顺序，一个完成再下一个 |
+| 阶段性确认 | 开发过程中遇到疑问及时确认 |
+
+### 2.2 安全红线（禁止做）
+
+- 禁止明文存储密码（必须 BCrypt）
+- 禁止日志打印敏感信息（密码、手机号、身份证）
+- 禁止 SQL 拼接（必须 `#{}`）
+- 禁止信任前端传入的用户ID（必须从 Token 获取）
+
+### 2.3 性能红线
+
+- 禁止循环内查询数据库（N+1 问题）
+- 禁止深度分页（offset > 10000）
+- 禁止不带条件的全表查询
+- 禁止单次查询超过 1000 条不分批
+
+### 2.4 代码红线
+
+- 禁止 `System.out.println`
+- 禁止空 catch
+- 禁止硬编码魔法值
+- 禁止方法超过 50 行、类超过 500 行
+
+---
+
+## 3. 项目规范
+
+### 3.1 技术栈
 
 | 类别 | 技术 | 版本 |
 |------|------|------|
-| JDK | OpenJDK / Temurin | 17+ |
+| JDK | OpenJDK | 17+ |
 | 框架 | Spring Boot | 3.x |
 | ORM | MyBatis-Plus | 3.5.x |
 | 数据库 | MySQL | 8.0+ |
 | 缓存 | Redis | 7.0+ |
 | API文档 | Knife4j | 4.x |
 
-### 1.2 模块结构
+### 3.2 模块结构
 
 ```
 {project}/
@@ -42,7 +116,7 @@
 └── {project}-api/       # 对外接口 (App端)
 ```
 
-### 1.3 包结构
+### 3.3 包结构
 
 ```
 com.{company}.{project}.{module}/
@@ -55,20 +129,17 @@ com.{company}.{project}.{module}/
 └── enums/               # 枚举类
 ```
 
----
-
-## 2. 命名规范
-
-### 2.1 Java 命名
+### 3.4 命名规范
 
 | 类型 | 规则 | 示例 |
 |------|------|------|
 | 类名 | 大驼峰 | `UserService` |
-| 方法名 | 小驼峰 | `getUserById` |
-| 变量名 | 小驼峰 | `userId` |
-| 常量名 | 大写下划线 | `MAX_PAGE_SIZE` |
+| 方法/变量 | 小驼峰 | `getUserById` |
+| 常量 | 大写下划线 | `MAX_PAGE_SIZE` |
+| 表名 | 小写下划线，单数 | `user`, `order_item` |
+| 字段名 | 小写下划线 | `user_id`, `create_time` |
 
-### 2.2 类命名约定
+### 3.5 类命名约定
 
 | 类型 | 格式 |
 |------|------|
@@ -76,387 +147,155 @@ com.{company}.{project}.{module}/
 | Mapper | `{Entity}Mapper` |
 | Service | `{Entity}Service` / `{Entity}ServiceImpl` |
 | Controller | `{Entity}Controller` |
-| 请求DTO | `{Entity}CreateRequest` / `{Entity}UpdateRequest` / `{Entity}QueryRequest` |
+| 请求DTO | `{Entity}CreateRequest` / `{Entity}UpdateRequest` |
 | 响应DTO | `{Entity}Response` |
 
-### 2.3 数据库命名
+### 3.6 接口规范
 
-| 类型 | 规则 | 示例 |
-|------|------|------|
-| 表名 | 小写下划线，单数 | `user`, `order_item` |
-| 字段名 | 小写下划线 | `user_id`, `create_time` |
-| 主键 | `id` | `id BIGINT` |
-| 外键 | `{关联表}_id` | `user_id` |
-| 索引 | `idx_{表名}_{字段}` | `idx_user_phone` |
+**URL 格式**：`/{项目}/{端类型}/v{版本}/{模块}/{资源}`
 
-### 2.4 通用字段
+端类型：`web`(管理后台) | `api`(App) | `open`(开放)
 
-每张业务表必须包含：`id`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`
-
----
-
-## 3. 接口规范
-
-> 详细示例见 `/gen-api`，请求/响应规范见 `/common`
-
-### 3.1 URL 格式
-
-```
-/{项目}/{端类型}/v{版本}/{模块}/{资源}
-```
-
-端类型：`web`(管理后台) | `api`(App) | `open`(开放) | `callback`(回调) | `internal`(内部)
-
-### 3.2 RESTful CRUD
+**RESTful**：
 
 | 操作 | 方法 | 路径 |
 |------|------|------|
-| 列表/分页 | GET | `/{module}` |
+| 列表 | GET | `/{module}` |
 | 详情 | GET | `/{module}/{id}` |
 | 创建 | POST | `/{module}` |
 | 更新 | PUT | `/{module}/{id}` |
 | 删除 | DELETE | `/{module}/{id}` |
 
-### 3.3 响应格式
-
+**响应格式**：
 ```json
-{"code": 0, "message": "成功", "data": {}, "timestamp": 1704067200000}
+{"code": 0, "message": "成功", "data": {}}
 ```
 
-### 3.4 错误码分段
+### 3.7 通用字段
 
-| 范围 | 模块 | 示例 |
-|------|------|------|
-| 0 | 成功 | - |
-| 10000-10999 | 认证授权 | 10001 未登录、10002 Token过期 |
-| 11000-11999 | 权限控制 | 11001 无权限 |
-| 20000-20999 | 用户模块 | 20001 用户不存在 |
-| 21000-21999 | 订单模块 | 21001 订单不存在 |
-| 22000-22999 | 商品模块 | 22001 商品已下架 |
-| 23000-23999 | 支付模块 | 23001 余额不足 |
-| 90000-99999 | 系统错误 | 90001 系统繁忙 |
-
-> 新模块按 +1000 递增分配
-
-### 3.5 分页参数
-
-| 参数 | 类型 | 默认值 | 限制 |
-|------|------|--------|------|
-| pageNo | int | 1 | >= 1 |
-| pageSize | int | 10 | 1-100 |
-
-### 3.6 时间格式
-
-| 场景 | 格式 | 示例 |
-|------|------|------|
-| 日期时间 | `yyyy-MM-dd HH:mm:ss` | 2024-01-15 14:30:00 |
-| 仅日期 | `yyyy-MM-dd` | 2024-01-15 |
-| 仅时间 | `HH:mm:ss` | 14:30:00 |
-| 时间戳 | 毫秒级 long | 1704067200000 |
-
----
-
-## 4. 开发流程
-
-### 4.1 完整流程
-
+每张业务表必须包含：
 ```
-需求输入 → 需求分析 → 需求澄清 → 方案设计 → 方案确认
-    ↓
-任务拆分 → 代码开发 → 自检 → 代码审查 → 完成
+id, del_flag, create_by, create_time, update_by, update_time
 ```
 
-### 4.2 需求规模判断
+### 3.8 错误码分段
 
-| 规模 | 特征 | 流程 |
-|------|------|------|
-| 简单 | 改字段、加接口、修Bug | 直接开发 |
-| 中等 | 新模块、新功能 | 简化流程 |
-| 复杂 | 跨模块、架构调整 | 完整流程 |
-
-注：不管规模程度，最终都需要用户确认后开发，禁止不确认直接开发。
-
----
-
-## 5. 禁止事项
-
-### 5.1 安全红线
-
-- 禁止明文存储密码（必须使用 BCrypt）
-- 禁止日志打印敏感信息（密码、手机号、身份证、银行卡）
-- 禁止 SQL 字符串拼接（必须使用参数化查询 `#{}`）
-- 禁止信任前端传入的用户ID（必须从 Token 获取）
-- 禁止未校验的用户输入直接入库（必须使用 @Validated）
-
-### 5.2 性能红线
-
-- 禁止循环内查询数据库（N+1 问题，必须批量查询或 JOIN）
-- 禁止深度分页（offset > 10000，必须使用游标分页）
-- 禁止不带条件的全表查询
-- 禁止单次查询超过 1000 条不分批处理
-
-### 5.3 代码禁忌
-
-- 禁止在循环中打印日志
-- 禁止使用 `System.out.println`
-- 禁止捕获异常后不处理（空 catch）
-- 禁止硬编码魔法值（必须使用常量或枚举）
-- 禁止方法超过 50 行不拆分
-- 禁止类超过 500 行不拆分
-
-### 5.4 Git 禁忌
-
-- 禁止提交敏感文件（.env、密钥、credentials）
-- 禁止直接 push 到 master/main
-- 禁止 `--force` 推送
-
----
-
-## 6. 事务规范
-
-### 6.1 使用场景
-
-| 场景 | 是否需要事务 |
-|------|-------------|
-| 单表写操作 | 否（MyBatis-Plus 自动处理） |
-| 多表写操作 | 是 |
-| 先查后改 | 是（需保证一致性时） |
-| 纯查询 | 否 |
-
-### 6.2 注解使用
-
-```java
-// 标准用法
-@Transactional(rollbackFor = Exception.class)
-public void bindUserRole(Long userId, List<Long> roleIds) { ... }
-
-// 只读事务（查询多表需一致性快照）
-@Transactional(readOnly = true)
-public UserDetailResponse getDetail(Long id) { ... }
-```
-
-### 6.3 禁止事项
-
-- 禁止在 Controller 层使用 `@Transactional`
-- 禁止事务方法内调用同类的另一个事务方法（事务失效）
-- 禁止事务内进行 RPC/HTTP 调用
-- 禁止大事务（事务方法超过 20 行需拆分）
-
----
-
-## 7. 缓存规范
-
-### 7.1 Key 命名
-
-```
-{项目}:{模块}:{业务}:{标识}
-```
-
-示例：`toy:user:info:123`、`toy:order:detail:456`
-
-### 7.2 过期时间
-
-| 数据类型 | 过期时间 | 常量 |
-|----------|----------|------|
-| 热点数据 | 1小时 | `Constants.CACHE_1_HOUR` |
-| 普通数据 | 24小时 | `Constants.CACHE_1_DAY` |
-| 配置数据 | 7天 | `Constants.CACHE_7_DAY` |
-| 验证码 | 5分钟 | `Constants.CACHE_5_MIN` |
-
-### 7.3 缓存策略
-
-```java
-// 查询：先缓存后数据库
-public User getById(Long id) {
-    String key = RedisKeys.USER_INFO + id;
-    User user = redisUtils.get(key, User.class);
-    if (user == null) {
-        user = userMapper.selectById(id);
-        if (user != null) {
-            redisUtils.set(key, user, Constants.CACHE_1_HOUR);
-        }
-    }
-    return user;
-}
-
-// 更新：先数据库后删缓存
-public void update(User user) {
-    userMapper.updateById(user);
-    redisUtils.delete(RedisKeys.USER_INFO + user.getId());
-}
-```
-
-### 7.4 防护措施
-
-| 问题 | 解决方案 |
-|------|----------|
-| 缓存穿透 | 空值缓存（短过期）或布隆过滤器 |
-| 缓存击穿 | 分布式锁或永不过期+异步更新 |
-| 缓存雪崩 | 过期时间加随机值 |
-
----
-
-## 8. 并发控制
-
-### 8.1 乐观锁（推荐）
-
-```java
-// Entity 添加版本字段
-@Version
-private Integer version;
-
-// 更新时自动检查版本
-userMapper.updateById(user);  // WHERE version = ?
-```
-
-适用：冲突概率低、读多写少
-
-### 8.2 悲观锁
-
-```java
-// Mapper 方法
-@Select("SELECT * FROM user WHERE id = #{id} FOR UPDATE")
-User selectForUpdate(Long id);
-```
-
-适用：冲突概率高、必须成功
-
-### 8.3 分布式锁
-
-```java
-String lockKey = RedisKeys.LOCK_ORDER + orderId;
-boolean locked = redisUtils.tryLock(lockKey, 10, TimeUnit.SECONDS);
-if (!locked) {
-    throw new BusinessException(ErrorCode.SYSTEM_BUSY);
-}
-try {
-    // 业务逻辑
-} finally {
-    redisUtils.unlock(lockKey);
-}
-```
-
----
-
-## 9. 异步处理
-
-### 9.1 使用场景
-
-- 发送通知（短信、邮件、推送）
-- 日志记录
-- 数据同步
-- 非核心业务
-
-### 9.2 注解使用
-
-```java
-@Async("taskExecutor")
-public void sendNotification(Long userId, String message) {
-    // 异步执行，不阻塞主流程
-}
-```
-
-### 9.3 禁止事项
-
-- 禁止异步方法内操作主流程数据（数据可能未提交）
-- 禁止异步方法抛出异常不处理
-- 禁止在同类内调用异步方法（失效）
-
----
-
-## 10. 文件上传
-
-### 10.1 限制规范
-
-| 类型 | 大小限制 | 允许格式 |
-|------|----------|----------|
-| 图片 | 5MB | jpg, jpeg, png, gif, webp |
-| 文档 | 20MB | pdf, doc, docx, xls, xlsx |
-| 视频 | 100MB | mp4, avi, mov |
-| 头像 | 2MB | jpg, jpeg, png |
-
-### 10.2 安全校验
-
-```java
-// 1. 校验文件类型（不能只看后缀）
-String contentType = file.getContentType();
-AssertUtils.isTrue(ALLOWED_TYPES.contains(contentType), ErrorCode.PARAM_ERROR, "文件类型不支持");
-
-// 2. 校验文件大小
-AssertUtils.isTrue(file.getSize() <= MAX_SIZE, ErrorCode.PARAM_ERROR, "文件大小超限");
-
-// 3. 重命名文件（防止路径遍历）
-String fileName = UUID.randomUUID() + getExtension(file.getOriginalFilename());
-```
-
-### 10.3 存储路径
-
-```
-/{年}/{月}/{日}/{uuid}.{ext}
-```
-
-示例：`/2024/01/15/a1b2c3d4.jpg`
-
----
-
-## 11. 日志规范
-
-```java
-log.info("[类名.方法名] 操作描述, 参数={}", value);
-```
-
-| 级别 | 场景 |
+| 范围 | 模块 |
 |------|------|
-| ERROR | 系统错误、影响业务的异常 |
-| WARN | 潜在问题、可恢复异常 |
-| INFO | 关键业务流程、重要操作 |
-| DEBUG | 调试信息 |
+| 0 | 成功 |
+| 10000-10999 | 认证授权 |
+| 11000-11999 | 权限控制 |
+| 20000+ | 业务模块（按 +1000 递增） |
+| 90000-99999 | 系统错误 |
 
 ---
 
-## 12. Git 提交规范
+## 4. Skill 索引
 
-```
-<type>: <subject>
-```
-
-| 类型 | 说明 |
-|------|------|
-| feat | 新功能 |
-| fix | 修复Bug |
-| docs | 文档变更 |
-| style | 代码格式 |
-| refactor | 重构 |
-| test | 测试 |
-| chore | 构建/工具 |
-
----
-
-## 13. Skill 索引
-
-### 13.1 Skill 清单
+### 4.1 流程类
 
 | Skill | 场景 | 说明 |
 |-------|------|------|
-| `/analyze` | 新功能开发 | 需求分析、方案设计 |
-| `/change` | 需求变更 | 开发中需求调整 |
-| `/resume` | 继续开发 | 中断后恢复进度 |
+| `/analyze-req` | 需求分析 | 澄清需求、明确边界、生成需求文档 |
+| `/analyze-design` | 技术方案 | 数据库、接口、代码结构设计 |
 | `/task` | 任务管理 | 创建、更新、查看任务 |
-| `/fix` | 修复Bug | 快速定位和修复 |
 | `/review` | 代码审查 | 提交前自检 |
-| `/gen-sql` | 建表 | 生成表结构SQL |
-| `/gen-crud` | 新模块 | 生成完整CRUD代码 |
-| `/gen-api` | 加接口 | 已有模块追加接口 |
-| `/gen-enum` | 加枚举 | 生成枚举类 |
-| `/gen-test` | 写测试 | 生成单元/集成测试 |
-| `/refactor` | 重构 | 代码优化指南 |
-| `/deploy` | 部署 | 生成部署配置 |
-| `/common` | 公共类 | 查看R、ErrorCode等 |
 
-### 13.2 调用顺序
+### 4.2 生成类
 
-**新模块开发：** `/analyze` → `/task` → `/gen-sql` → `/gen-crud` → `/gen-test` → `/review`
+| Skill | 场景 | 说明 |
+|-------|------|------|
+| `/gen` | 代码生成 | 统一入口：SQL、CRUD、API、枚举 |
+| `/gen-test` | 测试生成 | 单元测试、集成测试 |
 
-**新增接口：** `/analyze`(简化) → `/gen-api` → `/review`
+### 4.3 辅助类
 
-**修复Bug：** `/fix` → `/gen-test`(补测试) → `/review`
+| Skill | 场景 | 说明 |
+|-------|------|------|
+| `/fix` | 修复Bug | 快速定位和修复 |
+| `/change` | 需求变更 | 开发中需求调整 |
+| `/resume` | 恢复开发 | 中断后继续 |
+| `/refactor` | 重构 | 代码优化 |
+
+### 4.4 参考类
+
+| Skill | 场景 | 说明 |
+|-------|------|------|
+| `/common` | 公共类 | R、ErrorCode、异常类等 |
+| `/deploy` | 部署配置 | Docker、Nginx 配置 |
+
+### 4.5 调用顺序
+
+**新模块开发**：
+```
+/analyze-req → /analyze-design → /task → /gen → 业务开发 → /gen-test → /review
+```
+
+**新增接口**：
+```
+/analyze-req(简化) → /analyze-design → /gen → /review
+```
+
+**修复Bug**：
+```
+/fix → /gen-test(补测试) → /review
+```
+
+---
+
+## 5. 详细规范索引
+
+以下规范在对应 Skill 文件中有详细说明：
+
+| 规范 | 位置 |
+|------|------|
+| 需求分析流程 | `/analyze-req` |
+| 技术方案模板 | `/analyze-design` |
+| 代码生成模板 | `/gen` |
+| 事务规范 | `/common` |
+| 缓存规范 | `/common` |
+| 并发控制 | `/common` |
+| 异常处理 | `/common` |
+| 日志规范 | `/common` |
+| 测试规范 | `/gen-test` |
+| 审查清单 | `/review` |
+
+---
+
+## 6. 文档管理
+
+### 6.1 文档目录结构
+
+```
+docs/
+├── req/           # 需求分析文档
+├── design/        # 技术方案文档
+├── task/          # 任务文档
+└── sql/           # SQL 脚本
+```
+
+### 6.2 文档命名规范
+
+**格式**：`{模块}_v{版本}.md`
+
+**示例**：
+- 需求文档：`docs/req/feedback_v1.md`
+- 技术方案：`docs/design/feedback_v1.md`
+- 任务文档：`docs/task/feedback_v1.md`
+- SQL 脚本：`docs/sql/feedback.sql`
+
+### 6.3 版本规则
+
+| 场景 | 版本处理 |
+|------|---------|
+| 首次创建 | v1 |
+| 需求变更 | 版本号 +1（v1 → v2） |
+| 小修改 | 原地更新，不改版本 |
+
+### 6.4 保存时机
+
+| 阶段 | 保存动作 |
+|------|---------|
+| 需求确认后 | 保存到 `docs/req/{模块}_v{版本}.md` |
+| 方案确认后 | 保存到 `docs/design/{模块}_v{版本}.md` |
+| 任务拆分后 | 保存到 `docs/task/{模块}_v{版本}.md` |
