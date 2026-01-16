@@ -1,0 +1,204 @@
+---
+name: review
+description: 代码审查检查清单和流程。用于代码提交前的自检、PR审查、代码质量检查。
+---
+
+# 代码审查
+
+## 适用场景
+
+- 代码提交前自检
+- Pull Request 审查
+- 代码质量检查
+
+---
+
+## 审查流程
+
+```
+Step 1: 功能检查 → Step 2: 代码规范 → Step 3: 安全检查 → Step 4: 性能检查 → Step 5: 输出报告
+```
+
+---
+
+## 审查清单
+
+### 1. 功能检查
+
+- [ ] 功能是否符合需求
+- [ ] 边界条件是否处理
+- [ ] 异常情况是否处理
+- [ ] 是否有遗漏的场景
+
+### 2. 代码规范
+
+- [ ] 命名是否符合规范（参考 CLAUDE.md）
+- [ ] 代码格式是否统一
+- [ ] 注释是否清晰必要
+- [ ] 是否有重复代码
+- [ ] 方法是否过长（建议不超过50行）
+- [ ] 类是否过大（建议不超过500行）
+
+### 3. 安全检查
+
+- [ ] 是否有 SQL 注入风险
+- [ ] 是否有 XSS 风险
+- [ ] 敏感信息是否脱敏
+- [ ] 权限校验是否完整
+- [ ] 是否信任了前端传入的用户ID
+
+### 4. 性能检查
+
+- [ ] 是否有 N+1 查询问题（循环内查数据库）
+- [ ] 是否在循环中执行数据库操作
+- [ ] 是否有不必要的数据库查询
+- [ ] 大数据量是否分页处理（单次 ≤ 1000）
+- [ ] 是否有深度分页（offset > 10000）
+- [ ] 批量操作是否分批执行（每批 ≤ 500）
+- [ ] 是否有全表扫描（缺少索引）
+- [ ] 是否有内存泄漏风险
+
+### 5. 日志检查
+
+- [ ] 关键操作是否有日志
+- [ ] 日志格式是否规范
+- [ ] 是否打印了敏感信息
+- [ ] 是否在循环中打印日志
+
+### 6. 异常处理
+
+- [ ] 异常是否被正确捕获
+- [ ] 异常信息是否有意义
+- [ ] 是否有空的 catch 块
+- [ ] 事务是否正确回滚
+
+### 7. 测试检查
+
+- [ ] 是否有单元测试
+- [ ] 测试覆盖率是否足够
+- [ ] 边界条件是否测试
+
+---
+
+## 常见问题
+
+### 命名问题
+
+```java
+// ✗ 错误
+int a = 1;
+String str = "hello";
+public void process() {}
+
+// ✓ 正确
+int userCount = 1;
+String userName = "hello";
+public void processOrder() {}
+```
+
+### 空指针风险
+
+```java
+// ✗ 风险
+User user = userMapper.selectById(id);
+return user.getName();  // user 可能为 null
+
+// ✓ 正确
+User user = userMapper.selectById(id);
+if (user == null) {
+    throw new BusinessException(ErrorCode.DATA_NOT_EXIST);
+}
+return user.getName();
+```
+
+### SQL 注入风险
+
+```java
+// ✗ 危险
+@Select("SELECT * FROM user WHERE name = '" + name + "'")
+
+// ✓ 安全
+@Select("SELECT * FROM user WHERE name = #{name}")
+```
+
+### N+1 查询
+
+```java
+// ✗ N+1 问题
+List<Order> orders = orderMapper.selectList();
+for (Order order : orders) {
+    User user = userMapper.selectById(order.getUserId());  // N次查询
+}
+
+// ✓ 正确 - 批量查询
+List<Order> orders = orderMapper.selectList();
+Set<Long> userIds = orders.stream().map(Order::getUserId).collect(toSet());
+Map<Long, User> userMap = userMapper.selectBatchIds(userIds)
+    .stream().collect(toMap(User::getId, Function.identity()));
+```
+
+### 深度分页
+
+```java
+// ✗ 深度分页问题
+SELECT * FROM order LIMIT 100000, 10;  // 扫描 100010 行
+
+// ✓ 游标分页
+SELECT * FROM order WHERE id > #{lastId} ORDER BY id LIMIT 10;
+```
+
+### 批量操作
+
+```java
+// ✗ 未分批
+mapper.insertBatch(largeList);  // 可能超时或内存溢出
+
+// ✓ 分批处理
+List<List<Entity>> batches = Lists.partition(largeList, 500);
+for (List<Entity> batch : batches) {
+    mapper.insertBatch(batch);
+}
+```
+
+---
+
+## 输出报告
+
+```markdown
+## 代码审查报告
+
+**审查文件：** {文件列表}
+**审查时间：** {时间}
+
+### 问题汇总
+
+| 级别 | 数量 |
+|------|------|
+| 严重 | {n} |
+| 警告 | {n} |
+| 建议 | {n} |
+
+### 问题详情
+
+#### 严重问题
+1. {文件:行号} - {问题描述}
+
+#### 警告
+1. {文件:行号} - {问题描述}
+
+#### 建议
+1. {文件:行号} - {问题描述}
+
+### 结论
+
+{通过 / 需要修改后再审}
+```
+
+---
+
+## 注意事项
+
+1. **客观公正** - 基于规范和最佳实践
+2. **具体明确** - 指出具体问题和位置
+3. **提供建议** - 不只指出问题，也给出解决方案
+4. **区分级别** - 严重问题必须修复，建议可选

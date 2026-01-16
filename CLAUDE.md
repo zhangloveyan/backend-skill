@@ -2,12 +2,24 @@
 
 > 本文件定义项目核心规范、开发流程和 Skill 使用指南。
 
+## 文档版本
+
+| 版本 | 日期 | 说明 |
+|------|------|------|
+| v1.0 | 2025-01-15 | 初始版本 |
+
+---
+
 ## 1. 项目信息
 
 ```yaml
 项目名称: {project-name}
 基础包名: com.{company}.{project}
 ```
+
+如果已有项目开发，则通过读取目录文件确定 project-name、company、project 等信息。
+
+如果是新项目，则需要用户输入 project-name、company、project 等信息。
 
 ### 1.1 技术栈
 
@@ -35,13 +47,11 @@
 ```
 com.{company}.{project}.{module}/
 ├── controller/          # 控制器
-├── service/             # 服务接口
-│   └── impl/            # 服务实现
+├── service/impl/        # 服务层
 ├── mapper/              # 数据访问
 ├── entity/              # 实体类
-├── model/
-│   ├── request/         # 请求DTO
-│   └── response/        # 响应DTO
+├── model/request/       # 请求DTO
+├── model/response/      # 响应DTO
 └── enums/               # 枚举类
 ```
 
@@ -53,25 +63,21 @@ com.{company}.{project}.{module}/
 
 | 类型 | 规则 | 示例 |
 |------|------|------|
-| 类名 | 大驼峰 | `UserService`, `OrderController` |
-| 方法名 | 小驼峰 | `getUserById`, `createOrder` |
-| 变量名 | 小驼峰 | `userId`, `orderList` |
+| 类名 | 大驼峰 | `UserService` |
+| 方法名 | 小驼峰 | `getUserById` |
+| 变量名 | 小驼峰 | `userId` |
 | 常量名 | 大写下划线 | `MAX_PAGE_SIZE` |
-| 包名 | 小写 | `com.example.user` |
 
 ### 2.2 类命名约定
 
-| 类型 | 格式 | 示例 |
-|------|------|------|
-| 实体类 | `{Entity}` | `User` |
-| Mapper | `{Entity}Mapper` | `UserMapper` |
-| Service接口 | `{Entity}Service` | `UserService` |
-| Service实现 | `{Entity}ServiceImpl` | `UserServiceImpl` |
-| Controller | `{Entity}Controller` | `UserController` |
-| 创建请求 | `{Entity}CreateRequest` | `UserCreateRequest` |
-| 更新请求 | `{Entity}UpdateRequest` | `UserUpdateRequest` |
-| 查询请求 | `{Entity}QueryRequest` | `UserQueryRequest` |
-| 响应 | `{Entity}Response` | `UserResponse` |
+| 类型 | 格式 |
+|------|------|
+| 实体类 | `{Entity}` |
+| Mapper | `{Entity}Mapper` |
+| Service | `{Entity}Service` / `{Entity}ServiceImpl` |
+| Controller | `{Entity}Controller` |
+| 请求DTO | `{Entity}CreateRequest` / `{Entity}UpdateRequest` / `{Entity}QueryRequest` |
+| 响应DTO | `{Entity}Response` |
 
 ### 2.3 数据库命名
 
@@ -82,24 +88,16 @@ com.{company}.{project}.{module}/
 | 主键 | `id` | `id BIGINT` |
 | 外键 | `{关联表}_id` | `user_id` |
 | 索引 | `idx_{表名}_{字段}` | `idx_user_phone` |
-| 唯一索引 | `uk_{表名}_{字段}` | `uk_user_email` |
 
 ### 2.4 通用字段
 
-每张业务表必须包含：
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `id` | BIGINT | 主键，自增 |
-| `create_by` | VARCHAR(64) | 创建人 |
-| `create_time` | DATETIME | 创建时间 |
-| `update_by` | VARCHAR(64) | 更新人 |
-| `update_time` | DATETIME | 更新时间 |
-| `del_flag` | TINYINT(1) | 删除标记 |
+每张业务表必须包含：`id`, `create_by`, `create_time`, `update_by`, `update_time`, `del_flag`
 
 ---
 
 ## 3. 接口规范
+
+> 详细规范见 `/gen-api` 的 reference.md
 
 ### 3.1 URL 格式
 
@@ -107,55 +105,25 @@ com.{company}.{project}.{module}/
 /{项目}/{端类型}/v{版本}/{模块}/{资源}
 ```
 
-### 3.2 端类型
+端类型：`web`(管理后台) | `api`(App) | `open`(开放) | `callback`(回调) | `internal`(内部)
 
-| 端类型 | 说明 | 示例 |
-|--------|------|------|
-| `web` | 管理后台 | `/toy/web/v1/user` |
-| `api` | App/小程序 | `/toy/api/v1/user/profile` |
-| `open` | 开放接口 | `/toy/open/v1/oauth/token` |
-| `callback` | 回调接口 | `/toy/callback/v1/payment/notify` |
-| `internal` | 内部接口 | `/toy/internal/v1/device/command` |
+### 3.2 RESTful CRUD
 
-### 3.3 RESTful CRUD 路径
+| 操作 | 方法 | 路径 |
+|------|------|------|
+| 列表/分页 | GET | `/{module}` |
+| 详情 | GET | `/{module}/{id}` |
+| 创建 | POST | `/{module}` |
+| 更新 | PUT | `/{module}/{id}` |
+| 删除 | DELETE | `/{module}/{id}` |
 
-```
-GET    /{module}                # 列表/分页查询
-GET    /{module}/{id}           # 详情
-POST   /{module}                # 创建
-PUT    /{module}/{id}           # 更新
-DELETE /{module}/{id}           # 删除
-POST   /{module}/batch-delete   # 批量删除
-```
-
-### 3.4 URL 命名规则
-
-- 动作由 HTTP 方法表达，URL 不写 create/update/delete
-- 资源用名词，不用动词
-- 多单词用连字符分隔
-
-### 3.5 统一响应格式
+### 3.3 响应格式
 
 ```json
-{
-    "code": 0,
-    "message": "成功",
-    "data": { },
-    "timestamp": 1704067200000
-}
+{"code": 0, "message": "成功", "data": {}, "timestamp": 1704067200000}
 ```
 
-### 3.5 错误码分段
-
-| 范围 | 模块 |
-|------|------|
-| 0 | 成功 |
-| 10000-19999 | 认证/权限 |
-| 20000-29999 | 用户模块 |
-| 30000-39999 | 订单模块 |
-| 40000-49999 | 商品模块 |
-| 50000-59999 | 支付模块 |
-| 90000-99999 | 系统/通用 |
+错误码：`0`成功 | `10000-19999`认证 | `20000+`业务模块 | `90000-99999`系统
 
 ---
 
@@ -166,141 +134,75 @@ POST   /{module}/batch-delete   # 批量删除
 ```
 需求输入 → 需求分析 → 需求澄清 → 方案设计 → 方案确认
     ↓
-任务拆分 → 代码开发 → 自检 → 完成
+任务拆分 → 代码开发 → 自检 → 代码审查 → 完成
 ```
 
-### 4.2 流程说明
-
-| 阶段 | 说明 | 产出 |
-|------|------|------|
-| 需求输入 | 用户描述需求 | - |
-| 需求分析 | 识别功能点、模块、技术要点 | - |
-| 需求澄清 | 不明确项与用户确认 | - |
-| 方案设计 | 输出完整方案 | `docs/方案/{功能}.md` |
-| 方案确认 | 用户确认方案 | - |
-| 任务拆分 | 生成任务清单 | `docs/TASK.md` |
-| 代码开发 | 按任务逐项开发 | 代码文件 |
-| 自检 | 检查代码质量 | - |
-| 完成 | 更新任务状态 | - |
-
-### 4.3 需求规模判断
+### 4.2 需求规模判断
 
 | 规模 | 特征 | 流程 |
 |------|------|------|
 | 简单 | 改字段、加接口、修Bug | 直接开发 |
-| 中等 | 新模块、新功能 | 简化流程（可跳过方案文档） |
+| 中等 | 新模块、新功能 | 简化流程 |
 | 复杂 | 跨模块、架构调整 | 完整流程 |
 
----
-
-## 5. Skill 使用指南
-
-### 5.1 快速决策
-
-```
-想做新功能？     → /analyze
-想继续开发？     → /resume
-想加个接口？     → /gen-api
-想建新表？       → /gen-sql
-想生成CRUD？     → /gen-crud
-想加枚举？       → /gen-enum
-想部署？         → /deploy
-需求有变更？     → /change
-要修Bug？        → /fix
-```
-
-### 5.2 Skill 清单
-
-| Skill | 职责 | 阶段 |
-|-------|------|------|
-| `/analyze` | 需求分析、澄清、方案设计 | 需求阶段 |
-| `/task` | 创建/更新/查看任务 | 任务管理 |
-| `/resume` | 读取任务继续开发 | 恢复开发 |
-| `/gen-sql` | 生成建表SQL | 代码生成 |
-| `/gen-crud` | 生成完整CRUD代码 | 代码生成 |
-| `/gen-api` | 生成单个接口 | 代码生成 |
-| `/gen-enum` | 生成枚举类 | 代码生成 |
-| `/deploy` | Docker/Nginx配置 | 部署 |
-| `/change` | 处理需求变更 | 变更管理 |
-| `/fix` | Bug修复（简化流程） | 维护 |
-
-### 5.3 调用顺序
-
-**新模块开发：**
-```
-/analyze → /task → /gen-sql → /gen-crud
-```
-
-**新增接口：**
-```
-/analyze（简化） → /gen-api
-```
-
-**需求变更：**
-```
-/change → /task（更新）
-```
-
-**中断恢复：**
-```
-/resume → 继续开发
-```
+注：不管规模程度，最终都需要用户确认后开发，禁止不确认直接开发。
 
 ---
 
-## 6. 禁止事项
+## 5. 禁止事项
 
-### 6.1 安全红线
+### 5.1 安全红线
 
-- 禁止明文存储密码
-- 禁止日志打印敏感信息（密码、完整手机号、身份证、银行卡）
-- 禁止 SQL 拼接（使用参数化查询）
-- 禁止信任前端传入的用户ID（从Token获取）
+- 禁止明文存储密码（必须使用 BCrypt）
+- 禁止日志打印敏感信息（密码、手机号、身份证、银行卡）
+- 禁止 SQL 字符串拼接（必须使用参数化查询 `#{}`）
+- 禁止信任前端传入的用户ID（必须从 Token 获取）
+- 禁止未校验的用户输入直接入库（必须使用 @Validated）
 
-### 6.2 代码禁忌
+### 5.2 性能红线
+
+- 禁止循环内查询数据库（N+1 问题，必须批量查询或 JOIN）
+- 禁止深度分页（offset > 10000，必须使用游标分页）
+- 禁止不带条件的全表查询
+- 禁止单次查询超过 1000 条不分批处理
+
+### 5.3 代码禁忌
 
 - 禁止在循环中打印日志
 - 禁止使用 `System.out.println`
-- 禁止捕获异常后不处理
-- 禁止硬编码魔法值（使用常量）
-- 禁止使用 `SELECT *`
+- 禁止捕获异常后不处理（空 catch）
+- 禁止硬编码魔法值（必须使用常量或枚举）
+- 禁止方法超过 50 行不拆分
+- 禁止类超过 500 行不拆分
 
-### 6.3 Git 禁忌
+### 5.4 Git 禁忌
 
-- 禁止提交 `.env`、密钥等敏感文件
+- 禁止提交敏感文件（.env、密钥、credentials）
 - 禁止直接 push 到 master/main
-- 禁止 `--force` 推送（除非明确要求）
+- 禁止 `--force` 推送
 
 ---
 
-## 7. 日志规范
-
-### 7.1 格式
+## 6. 日志规范
 
 ```java
-log.info("[类名.方法名] 操作描述, 参数1={}, 参数2={}", value1, value2);
+log.info("[类名.方法名] 操作描述, 参数={}", value);
 ```
-
-### 7.2 级别
 
 | 级别 | 场景 |
 |------|------|
 | ERROR | 系统错误、影响业务的异常 |
 | WARN | 潜在问题、可恢复异常 |
 | INFO | 关键业务流程、重要操作 |
-| DEBUG | 调试信息、开发阶段 |
+| DEBUG | 调试信息 |
 
 ---
 
-## 8. Git 提交规范
-
-### 8.1 格式
+## 7. Git 提交规范
 
 ```
 <type>: <subject>
 ```
-
-### 8.2 类型
 
 | 类型 | 说明 |
 |------|------|
@@ -314,12 +216,23 @@ log.info("[类名.方法名] 操作描述, 参数1={}, 参数2={}", value1, valu
 
 ---
 
-## 9. 文档索引
+## 8. Skill 索引
 
-| 文档 | 路径 | 说明 |
-|------|------|------|
-| 开发规范 | `docs/01-开发规范.md` | 数据库/日志/注释/安全/Git |
-| 接口规范 | `docs/02-接口规范.md` | URL/响应/错误码 |
-| 代码模板 | `docs/03-代码模板.md` | CRUD模板 |
-| 公共类规范 | `docs/04-公共类规范.md` | R/异常/工具类 |
-| Docker部署 | `docs/05-Docker部署.md` | 部署配置 |
+### 8.1 快速决策
+
+```
+新功能开发？     → /analyze      需求变更？       → /change
+继续开发？       → /resume       修Bug？          → /fix
+查看任务？       → /task         代码审查？       → /review
+生成SQL？        → /gen-sql      代码重构？       → /refactor
+生成CRUD？       → /gen-crud     部署？           → /deploy
+加接口？         → /gen-api      查看公共类？     → /common
+加枚举？         → /gen-enum
+生成测试？       → /gen-test
+```
+
+### 8.2 调用顺序
+
+**新模块开发：** `/analyze` → `/task` → `/gen-sql` → `/gen-crud` → `/gen-test` → `/review`
+
+**新增接口：** `/analyze`(简化) → `/gen-api` → `/review`

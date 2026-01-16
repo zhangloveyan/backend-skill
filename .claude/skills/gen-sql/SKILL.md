@@ -108,3 +108,11 @@ ADD INDEX `idx_{table_name}_{field}` (`{field}`);
 3. **字符集** - 统一使用 `utf8mb4`
 4. **注释** - 每个字段必须有 COMMENT
 5. **索引** - 根据查询场景添加，不要过度索引
+
+---
+
+## 相关文档
+
+- [字段类型详细参考](reference.md)
+- [数据库迁移规范](migration.md)
+- [初始化脚本模板](templates/init-template.sql)

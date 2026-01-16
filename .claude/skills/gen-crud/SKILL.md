@@ -43,103 +43,13 @@ api/controller/{Entity}AppController.java     # App端
 
 ## 代码模板
 
-### Entity 实体类
+> 各层代码模板见同目录下的模板文件：
 
-```java
-@Data
-@TableName("{table_name}")
-@Schema(description = "{description}")
-public class {Entity} implements Serializable {
-
-    @TableId(type = IdType.AUTO)
-    private Long id;
-
-    // 业务字段
-
-    // 通用字段
-    private String createBy;
-    @TableField(fill = FieldFill.INSERT)
-    private Date createTime;
-    private String updateBy;
-    @TableField(fill = FieldFill.UPDATE)
-    private Date updateTime;
-    @TableLogic
-    private Integer delFlag;
-}
-```
-
-### Controller (Web端) - RESTful风格
-
-```java
-@Tag(name = "{description}管理")
-@RestController
-@RequestMapping("/{project}/web/v1/{module}")
-@RequiredArgsConstructor
-public class {Entity}Controller {
-
-    private final {Entity}Service {entity}Service;
-
-    @Operation(summary = "列表/分页查询")
-    @GetMapping
-    public R<IPage<{Entity}Response>> list({Entity}QueryRequest request) {
-        return R.success({entity}Service.pageQuery(request));
-    }
-
-    @Operation(summary = "获取详情")
-    @GetMapping("/{id}")
-    public R<{Entity}Response> detail(@PathVariable Long id) {
-        return R.success({entity}Service.getDetail(id));
-    }
-
-    @ApiLog("创建{description}")
-    @Operation(summary = "创建")
-    @PostMapping
-    public R<Long> create(@RequestBody @Validated {Entity}CreateRequest request) {
-        return R.success({entity}Service.create(request));
-    }
-
-    @ApiLog("更新{description}")
-    @Operation(summary = "更新")
-    @PutMapping("/{id}")
-    public R<Void> update(@PathVariable Long id, @RequestBody @Validated {Entity}UpdateRequest request) {
-        {entity}Service.update(id, request);
-        return R.success();
-    }
-
-    @ApiLog("删除{description}")
-    @Operation(summary = "删除")
-    @DeleteMapping("/{id}")
-    public R<Void> delete(@PathVariable Long id) {
-        {entity}Service.deleteById(id);
-        return R.success();
-    }
-}
-```
-
-### Controller (App端) - RESTful风格
-
-```java
-@Tag(name = "{description}")
-@RestController
-@RequestMapping("/{project}/api/v1/{module}")
-@RequiredArgsConstructor
-public class {Entity}AppController {
-
-    private final {Entity}Service {entity}Service;
-
-    @Operation(summary = "列表查询")
-    @GetMapping
-    public R<List<{Entity}Response>> list({Entity}QueryRequest request) {
-        return R.success({entity}Service.list(request));
-    }
-
-    @Operation(summary = "获取详情")
-    @GetMapping("/{id}")
-    public R<{Entity}Response> detail(@PathVariable Long id) {
-        return R.success({entity}Service.getDetail(id));
-    }
-}
-```
+- [Entity 模板](entity-template.md)
+- [Mapper 模板](mapper-template.md)
+- [Service 模板](service-template.md)
+- [DTO 模板](dto-template.md)
+- [Controller 模板](controller-template.md)
 
 ---
 
