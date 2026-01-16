@@ -104,3 +104,78 @@ public R<Void> delete(@PathVariable Long id) {
 return R.fail(ErrorCode.NOT_FOUND);
 return R.fail(ErrorCode.PARAM_ERROR, "用户名不能为空");
 ```
+
+---
+
+## 响应格式规范
+
+### 统一格式
+
+```json
+{
+    "code": 0,
+    "message": "成功",
+    "data": { ... },
+    "timestamp": 1704067200000
+}
+```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| code | int | 状态码，0 表示成功 |
+| message | string | 提示信息 |
+| data | object/array/null | 业务数据 |
+| timestamp | long | 响应时间戳（毫秒） |
+
+### 分页响应格式
+
+```json
+{
+    "code": 0,
+    "message": "成功",
+    "data": {
+        "records": [
+            { "id": 1, "name": "张三" },
+            { "id": 2, "name": "李四" }
+        ],
+        "total": 100,
+        "pageNo": 1,
+        "pageSize": 10,
+        "pages": 10
+    },
+    "timestamp": 1704067200000
+}
+```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| records | array | 数据列表 |
+| total | long | 总记录数 |
+| pageNo | int | 当前页码 |
+| pageSize | int | 每页数量 |
+| pages | int | 总页数 |
+
+### 列表响应格式
+
+```json
+{
+    "code": 0,
+    "message": "成功",
+    "data": [
+        { "id": 1, "name": "选项A" },
+        { "id": 2, "name": "选项B" }
+    ],
+    "timestamp": 1704067200000
+}
+```
+
+### 失败响应格式
+
+```json
+{
+    "code": 20001,
+    "message": "用户不存在",
+    "data": null,
+    "timestamp": 1704067200000
+}
+```

@@ -1,9 +1,16 @@
 ---
 name: gen-api
-description: 在已有模块中添加单个接口。用于已有模块需要新增接口、不需要完整CRUD只加特定功能。
+description: 在已有模块中添加单个接口。用于已有模块需要新增接口、非标准CRUD接口（导出、统计、审批等）。
 ---
 
 # 生成单个接口
+
+## 适用场景
+
+- 已有模块追加接口
+- 非标准 CRUD 接口（导出、统计、状态变更、审批等）
+
+---
 
 ## 输入参数
 
@@ -17,27 +24,6 @@ description: 在已有模块中添加单个接口。用于已有模块需要新�
 
 ---
 
-## RESTful 风格路径
-
-> 参考 CLAUDE.md「接口规范」章节
-
-```
-/{project}/{端类型}/v1/{module}/{resource}
-```
-
-| 操作 | 方法 | 路径 | 说明 |
-|------|------|------|------|
-| 列表/分页 | GET | `/` | 根路径 |
-| 详情 | GET | `/{id}` | 资源ID |
-| 创建 | POST | `/` | 根路径 |
-| 更新 | PUT | `/{id}` | 资源ID |
-| 删除 | DELETE | `/{id}` | 资源ID |
-| 批量删除 | POST | `/batch-delete` | 特殊操作 |
-| 导出 | GET | `/export` | 特殊操作 |
-| 状态变更 | PUT | `/{id}/status` | 子资源操作 |
-
----
-
 ## 常用接口模板
 
 ### 批量删除
@@ -46,8 +32,8 @@ description: 在已有模块中添加单个接口。用于已有模块需要新�
 @ApiLog("批量删除{description}")
 @Operation(summary = "批量删除")
 @PostMapping("/batch-delete")
-public R<Void> batchDelete(@RequestBody List<Long> ids) {
-    {entity}Service.batchDelete(ids);
+public R<Void> batchDelete(@RequestBody @Validated BatchDeleteRequest request) {
+    {entity}Service.batchDelete(request.getIds());
     return R.success();
 }
 ```
@@ -80,8 +66,20 @@ public void export({Entity}QueryRequest request, HttpServletResponse response) {
 ```java
 @Operation(summary = "统计数据")
 @GetMapping("/stats")
-public R<{Entity}StatsResponse> stats() {
-    return R.success({entity}Service.getStats());
+public R<{Entity}StatsResponse> stats({Entity}StatsRequest request) {
+    return R.success({entity}Service.getStats(request));
+}
+```
+
+### 审批操作
+
+```java
+@ApiLog("审批{description}")
+@Operation(summary = "审批")
+@PutMapping("/{id}/approve")
+public R<Void> approve(@PathVariable Long id, @RequestBody @Validated ApproveRequest request) {
+    {entity}Service.approve(id, request);
+    return R.success();
 }
 ```
 
@@ -89,11 +87,18 @@ public R<{Entity}StatsResponse> stats() {
 
 ## 自检清单
 
-- [ ] 接口路径符合 RESTful 规范
-- [ ] HTTP 方法正确
-- [ ] Service 方法有日志
-- [ ] 写操作有 `@ApiLog`
-- [ ] 参数校验完整
+- [ ] 接口路径符合 RESTful 规范（参考 CLAUDE.md）
+- [ ] HTTP 方法正确（查询用 GET，操作用 POST/PUT/DELETE）
+- [ ] Service 方法有日志记录
+- [ ] 写操作有 `@ApiLog` 注解
+- [ ] 参数校验完整（使用 `@Validated`）
+
+---
+
+## 相关文档
+
+- [接口示例](examples.md)
+- 请求/响应规范见 `/common`
 
 ---
 

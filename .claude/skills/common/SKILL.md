@@ -70,7 +70,8 @@ redisUtils.delete(RedisKeys.USER_INFO + userId);
 ## 详细文档
 
 - [R 响应类](response.md)
-- [全局常量](constants.md)
+- [请求规范](request.md)
 - [ErrorCode 错误码](errorcode.md)
 - [异常处理](exception.md)
+- [全局常量](constants.md)
 - [工具类](utils.md)
