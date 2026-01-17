@@ -125,81 +125,153 @@ import com.{company}.{project}.common.core.ErrorCode;
 import com.{company}.{project}.common.core.R;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
-import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+/**
+ * 全局异常处理。
+ * <p>
+ * 统一将系统内抛出的异常转换为前端可识别的 {@link R} 结构，
+ * 并按类型区分日志级别（业务异常 warn，系统异常 error）。
+ * </p>
+ */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    /**
-     * 业务异常
-     */
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(BusinessException.class)
-    public R<Void> handleBusinessException(BusinessException e, HttpServletRequest request) {
-        log.warn("业务异常: uri={}, code={}, message={}", request.getRequestURI(), e.getCode(), e.getMessage());
-        return R.fail(e.getCode(), e.getMessage());
+    @ResponseBody
+    public R<Void> handleBusinessException(BusinessException ex) {
+        log.warn("业务异常: code={}, message={}", ex.getCode(), ex.getMessage());
+        return R.failure(ex.getCode(), ex.getMessage());
     }
 
-    /**
-     * 参数校验异常 - @RequestBody
-     */
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public R<Void> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
-        FieldError fieldError = e.getBindingResult().getFieldError();
-        String message = fieldError != null ? fieldError.getDefaultMessage() : "参数校验失败";
-        log.warn("参数校验失败: {}", message);
-        return R.fail(ErrorCode.PARAM_ERROR, message);
+    @ExceptionHandler(InternalException.class)
+    @ResponseBody
+    public R<Void> handleInternalException(InternalException ex) {
+        log.warn("内部接口异常: code={}, message={}", ex.getCode(), ex.getMessage());
+        return R.failure(ex.getCode(), ex.getMessage());
     }
 
-    /**
-     * 参数校验异常 - @RequestParam
-     */
-    @ExceptionHandler(BindException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public R<Void> handleBindException(BindException e) {
-        FieldError fieldError = e.getBindingResult().getFieldError();
-        String message = fieldError != null ? fieldError.getDefaultMessage() : "参数绑定失败";
-        log.warn("参数绑定失败: {}", message);
-        return R.fail(ErrorCode.PARAM_ERROR, message);
+    @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class})
+    @ResponseBody
+    public R<Void> handleValidationException(Exception ex) {
+        String message = "请求参数校验失败";
+        log.warn("参数校验异常", ex);
+        return R.failure(ErrorCode.BAD_REQUEST.getCode(), message);
     }
 
-    /**
-     * 请求方法不支持
-     */
-    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
-    public R<Void> handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException e) {
-        log.warn("请求方法不支持: {}", e.getMethod());
-        return R.fail(ErrorCode.METHOD_NOT_ALLOWED);
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseBody
+    public R<Void> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        HttpServletRequest request = getCurrentRequest();
+        if (request == null) {
+            log.warn("请求参数解析失败 - 无法获取请求信息");
+            return R.failure(ErrorCode.BAD_REQUEST.getCode(), "请求参数解析失败");
+        }
+
+        String requestUri = request.getRequestURI();
+        String method = request.getMethod();
+        String queryString = request.getQueryString();
+
+        log.warn("请求体解析失败 - URI: {}, Method: {}, QueryString: {}, Error: {}",
+                requestUri, method, queryString, ex.getMessage(), ex);
+
+        return R.failure(ErrorCode.BAD_REQUEST.getCode(), "请求体解析失败");
     }
 
-    /**
-     * 404 异常
-     */
-    @ExceptionHandler(NoHandlerFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public R<Void> handleNoHandlerFoundException(NoHandlerFoundException e) {
-        log.warn("接口不存在: {}", e.getRequestURL());
-        return R.fail(ErrorCode.NOT_FOUND, "接口不存在");
-    }
-
-    /**
-     * 其他异常
-     */
     @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public R<Void> handleException(Exception e, HttpServletRequest request) {
-        log.error("系统异常: uri={}", request.getRequestURI(), e);
-        return R.fail(ErrorCode.SYSTEM_ERROR);
+    @ResponseBody
+    public R<Void> handleException(Exception ex) {
+        HttpServletRequest request = getCurrentRequest();
+        if (request == null) {
+            log.error("系统异常 - 无法获取请求信息", ex);
+            return R.failure(ErrorCode.SYSTEM_ERROR);
+        }
+
+        String requestUri = request.getRequestURI();
+        String method = request.getMethod();
+        String queryString = request.getQueryString();
+
+        log.error("系统异常 - URI: {}, Method: {}, QueryString: {}",
+                requestUri, method, queryString, ex);
+        return R.failure(ErrorCode.SYSTEM_ERROR);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseBody
+    public R<Void> handleNoResourceFoundException(NoResourceFoundException ex) {
+        log.warn("资源未找到: {}", ex.getMessage());
+        return R.failure(ErrorCode.NOT_FOUND.getCode(), "请求的资源未找到");
+    }
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    @ResponseBody
+    public R<Void> handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException ex) {
+        HttpServletRequest request = getCurrentRequest();
+        if (request == null) {
+            log.warn("请求方法不支持 - 无法获取请求信息");
+            return R.failure(ErrorCode.METHOD_NOT_ALLOWED);
+        }
+
+        String requestUri = request.getRequestURI();
+        String method = request.getMethod();
+        String supportedMethods = null;
+        if (ex.getSupportedMethods() != null) {
+            supportedMethods = String.join(", ", ex.getSupportedMethods());
+        }
+
+        log.warn("请求方法不支持 - URI: {}, 当前方法: {}, 支持的方法: {}",
+                requestUri, method, supportedMethods);
+
+        return R.failure(ErrorCode.METHOD_NOT_ALLOWED.getCode(),
+                String.format("请求方法 '%s' 不被支持，该路径只支持: %s", method, supportedMethods));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    @ResponseBody
+    public R<Void> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
+        HttpServletRequest request = getCurrentRequest();
+        if (request == null) {
+            log.warn("参数类型不匹配 - 无法获取请求信息", ex);
+            return R.failure(ErrorCode.BAD_REQUEST.getCode(), "请求参数类型不正确");
+        }
+
+        String requestUri = request.getRequestURI();
+        String method = request.getMethod();
+        String queryString = request.getQueryString();
+        String paramName = ex.getName();
+        Object value = ex.getValue();
+        String requiredType = ex.getRequiredType() == null ? "unknown" : ex.getRequiredType().getSimpleName();
+        String handler = "-";
+        if (ex.getParameter() != null && ex.getParameter().getMethod() != null) {
+            handler = ex.getParameter().getMethod().getDeclaringClass().getSimpleName()
+                    + "." + ex.getParameter().getMethod().getName();
+        }
+
+        log.warn("参数类型不匹配 - URI: {}, Method: {}, Handler: {}, Param: {}, Value: {}, RequiredType: {}, QueryString: {}",
+                requestUri, method, handler, paramName, value, requiredType, queryString, ex);
+
+        return R.failure(ErrorCode.BAD_REQUEST.getCode(), "请求参数类型不正确");
+    }
+
+    private HttpServletRequest getCurrentRequest() {
+        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+        if (requestAttributes == null) {
+            return null;
+        }
+        return ((ServletRequestAttributes) requestAttributes).getRequest();
     }
 }
 ```
