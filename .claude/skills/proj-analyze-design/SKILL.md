@@ -5,7 +5,7 @@ description: 技术方案设计与确认（阶段二）。基于已确认的需�
 
 # 技术方案设计（阶段二）
 
-> **前置条件**：用户已确认阶段一（/analyze-req）的需求分析文档
+> **前置条件**：用户已确认阶段一（/proj-analyze-req）的需求分析文档，且全流程任务文档已创建
 > **目标**：设计技术实现方案，明确数据库、接口、代码结构
 > **产出**：技术方案文档（用户确认后进入开发阶段）
 
@@ -14,8 +14,15 @@ description: 技术方案设计与确认（阶段二）。基于已确认的需�
 ## 执行流程
 
 ```
-Step 1: 探索现有代码 → Step 2: 设计技术方案 → Step 3: 输出方案文档 → Step 4: 用户确认 → Step 5: 生成任务
+Step 0: 校验任务文档 → Step 1: 探索现有代码 → Step 2: 设计技术方案 → Step 3: 输出方案文档 → Step 4: 用户确认 → Step 5: 生成任务
 ```
+
+---
+
+## Step 0: 校验任务文档
+
+- 确认全流程任务文档存在
+- 若缺失，先创建任务文档骨架并补齐流程状态与上下文快照
 
 ---
 
@@ -53,74 +60,44 @@ update_by VARCHAR(64) COMMENT '更新人',
 update_time DATETIME COMMENT '更新时间'
 ```
 
-### 2.2 接口设计
+### 2.2 接口设计规范
 
-**URL 格式**：
-```
-/{项目}/{端类型}/v{版本}/{模块}/{资源}
-```
+**接口文档要求**：
+- **完整参数**：必须包含所有请求参数的类型、是否必填、示例值
+- **响应格式**：提供完整的JSON响应示例，包含所有字段
+- **错误码**：列出所有可能的错误码和说明
+- **业务场景**：说明接口的使用场景和业务含义
 
-**端类型**：
-| 端类型 | 说明 | 示例 |
-|--------|------|------|
-| web | 管理后台 | /toy/web/v1/user |
-| api | App/小程序 | /toy/api/v1/device |
-| open | 开放接口 | /toy/open/v1/callback |
+### 2.3 枚举类设计规范
 
-**RESTful 规范**：
-| 操作 | 方法 | 路径 |
-|------|------|------|
-| 列表/分页 | GET | /{module} |
-| 详情 | GET | /{module}/{id} |
-| 创建 | POST | /{module} |
-| 更新 | PUT | /{module}/{id} |
-| 删除 | DELETE | /{module}/{id} |
+**标准枚举格式**：参考模板中的枚举类设计，必须包含getByCode和getMessageByCode方法
 
-### 2.3 代码结构
+### 2.4 技术架构澄清
 
-**Core 模块**（业务核心）：
-```
-com.{company}.{project}.core.{module}/
-├── entity/{Entity}.java
-├── mapper/{Entity}Mapper.java
-├── service/{Entity}Service.java
-├── service/impl/{Entity}ServiceImpl.java
-└── enums/{Xxx}Enum.java
-```
+**按需澄清原则**：只在涉及相关技术时才需要澄清
 
-**Admin 模块**（Web后台）：
-```
-com.{company}.{project}.admin/
-├── controller/{Entity}Controller.java
-├── service/{Entity}ManageService.java
-├── service/impl/{Entity}ManageServiceImpl.java
-├── model/request/{Entity}CreateRequest.java
-├── model/request/{Entity}UpdateRequest.java
-├── model/request/{Entity}QueryRequest.java
-└── model/response/{Entity}Response.java
-```
-
-**API 模块**（App/小程序）：
-```
-com.{company}.{project}.api/
-├── controller/{Entity}Controller.java
-├── service/{Entity}AppService.java
-├── service/impl/{Entity}AppServiceImpl.java
-├── model/request/{Xxx}Request.java
-└── model/response/{Xxx}Response.java
-```
+**常见澄清场景**：
+- **消息/通知功能** → 澄清：推送服务 vs 前端轮询？
+- **实时数据展示** → 澄清：Redis vs 数据库？
+- **历史数据管理** → 澄清：永久保存 vs 定期清理？
+- **在线状态功能** → 澄清：实时更新机制？存储位置？
 
 ---
 
 ## Step 3: 输出方案文档
 
-使用模板输出技术方案文档。
+在充分澄清后，使用模板输出技术方案文档。
 
 **模板文件**：[技术方案模板](templates/design-doc.md)
 
-**保存位置**：`docs/design/{模块}_v{版本}.md`
+**保存位置**：`docs/design/{YYYYMMDD}_{中文模块名}_技术.md`
 
 **注意**：技术方案设计时如发现需求遗漏或变更，需同步更新需求文档。
+
+**同步更新任务文档**：
+- 将“技术方案”状态标记为进行中/已完成
+- 在产物清单中记录技术方案文档路径
+- 更新上下文快照与下一步指令
 
 ---
 
@@ -143,7 +120,7 @@ com.{company}.{project}.api/
 
 | 用户反馈 | 处理方式 |
 |----------|----------|
-| "确认"/"没问题"/"可以" | 调用 `/task` 拆分任务，开始开发 |
+| "确认"/"没问题"/"可以" | 调用 `/proj-task` 拆分任务，开始开发 |
 | "字段需要调整xxx" | 修改表结构设计，再次确认 |
 | "接口需要增加xxx" | 补充接口设计，再次确认 |
 | "取消"/"不做了" | 结束流程 |
@@ -164,7 +141,11 @@ com.{company}.{project}.api/
 
 用户确认技术方案后：
 
-1. **保存方案文档**（中等/复杂需求）：`docs/方案/{功能名称}.md`
-2. **生成任务清单**：调用 `/task` 创建任务
-3. **开始开发**：按顺序 SQL → Entity → Mapper → Service → DTO → Controller
-4. **开发完成**：调用 `/review` 自检
+1. **保存方案文档**（中等/复杂需求）：`docs/design/{YYYYMMDD}_{中文模块名}_技术.md`
+2. **生成任务清单**：调用 `/proj-task` 创建任务
+3. **开始开发**：按顺序 SQL → Entity → Mapper → DTO → Service → Controller
+4. **开发完成**：调用 `/proj-review` 自检
+
+**同步更新任务文档**：
+- 标记“方案确认”状态为已完成
+- 更新“下一步指令”为进入任务拆分
