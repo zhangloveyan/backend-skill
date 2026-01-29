@@ -153,6 +153,8 @@ api/  (App端)
 - [ ] 写操作有 `@ApiLog`
 - [ ] 接口路径符合 RESTful
 - [ ] 每个字段有注释/Schema
+- [ ] 类属性赋值优先使用 `BeanUtil.copyProperties`
+- [ ] 返回日期字段必须添加 `@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")`
 
 ---
 

@@ -25,8 +25,7 @@
       "Skill(proj-deploy)",
       "Skill(proj-fix)",
       "Skill(proj-refactor)",
-      "Skill(proj-resume)",
-      "mcp__sequential-thinking__sequentialthinking"
+      "Skill(proj-resume)"
     ],
     "deny": [],
     "ask": []
