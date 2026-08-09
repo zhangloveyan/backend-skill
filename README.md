@@ -1,3 +1,5 @@
+
+
 # 项目开发规范与 Claude Skills
 
 > 基于 Java Spring Boot 的企业级项目开发规范，配套 Claude Code 技能集，实现标准化、自动化的开发流程。
@@ -31,7 +33,7 @@
 - **数据库**：MySQL 8.0+ + Redis 7.0+
 - **API文档**：Knife4j 4.x
 - **测试框架**：JUnit 5 + Mockito + AssertJ
-- 
+
 ## 🚀 快速开始
 
 ### 1. 导入技能集
@@ -39,7 +41,7 @@
 将本项目的 `.claude/skills` 目录复制到你的项目根目录：
 
 ```bash
-cp -r project-standards/.claude/skills your-project/.claude/
+cp -r backend-skill/.claude/skills your-project/.claude/
 ```
 
 ### 2. 常用入口
@@ -117,7 +119,7 @@ graph LR
 ## 📁 技能目录结构
 
 ```
-project-standards/
+backend-skill/
 ├── CLAUDE.md                    # 核心开发规范文档
 ├── README.md                    # 项目说明文档
 └── .claude/skills/              # Claude Skills 技能集
