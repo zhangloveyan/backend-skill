@@ -1,5 +1,7 @@
 # Mapper 模板
 
+数据库列名与 [Entity 模板](entity.md) 的显式映射及 DDL 保持一致，并按 [SQL 命名规范](sql-reference.md) 校验；Java 属性名无需与数据库列名相同。
+
 ## Mapper 接口
 
 ```java
@@ -32,8 +34,8 @@ public interface {Entity}Mapper extends BaseMapper<{Entity}> {
     <resultMap id="BaseResultMap" type="com.{company}.{project}.{module}.entity.{Entity}">
         <id property="id" column="id"/>
         <!-- 业务字段 -->
-        <result property="name" column="name"/>
-        <result property="status" column="status"/>
+        <result property="name" column="display_name"/>
+        <result property="status" column="record_status"/>
         <!-- 通用字段 -->
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
@@ -43,7 +45,7 @@ public interface {Entity}Mapper extends BaseMapper<{Entity}> {
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, name, status, create_by, create_time, update_by, update_time, del_flag
+        id, display_name, record_status, create_by, create_time, update_by, update_time, del_flag
     </sql>
 
 </mapper>

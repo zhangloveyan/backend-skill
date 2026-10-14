@@ -1,5 +1,7 @@
 # Entity 模板
 
+表名及最终映射的数据库列名按 [SQL 命名规范](sql-reference.md) 校验。以下 Java 属性 `name`、`status` 显式映射为 `display_name`、`record_status`，Mapper XML 和 DDL 应使用相同列名；实际业务名称仍须按目标版本重新校验。已有数据库的映射变更须先确认迁移方案。
+
 ```java
 package com.{company}.{project}.{module}.entity;
 
@@ -30,9 +32,11 @@ public class {Entity} implements Serializable {
 
     // ========== 业务字段 ==========
 
+    @TableField("display_name")
     @Schema(description = "名称")
     private String name;
 
+    @TableField("record_status")
     @Schema(description = "状态 (1-启用, 0-禁用)")
     private Integer status;
 
@@ -73,5 +77,6 @@ private List<String> images;
  * 状态
  * @see StatusEnum
  */
+@TableField("record_status")
 private StatusEnum status;
 ```
