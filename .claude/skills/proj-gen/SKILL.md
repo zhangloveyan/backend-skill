@@ -60,7 +60,8 @@ description: 代码生成统一入口。生成 SQL、CRUD、API、枚举等代�
 
 ### 字段类型、通用字段与建表模板
 
-参考 [SQL 字段类型参考](templates/sql-reference.md)
+- 命名校验、字段类型与索引规则：[SQL 参考文档](templates/sql-reference.md)
+- 通用字段与完整 CREATE TABLE 模板：[技术方案模板中的表结构设计](../proj-analyze-design/templates/design-doc.md#211-表名-table_name)。替换占位名称并完成关键字检查后再生成 DDL，业务列名与 Entity、Mapper 保持一致。
 
 ---
 
