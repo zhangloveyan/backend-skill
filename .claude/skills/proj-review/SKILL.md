@@ -52,6 +52,8 @@ description: 代码审查检查清单和流程。用于代码提交前的自检�
 ### 2. 代码规范
 
 - [ ] 命名是否符合规范（参考 CLAUDE.md）
+- [ ] 新增或重命名的表、字段是否按 [SQL 命名规范](../proj-gen/templates/sql-reference.md) 检查目标 MySQL 版本全部关键字（含非保留关键字），并记录版本、来源和结果；反引号不能豁免，未核验不得判为通过
+- [ ] 已有冲突名称是否具有经确认的迁移方案，DDL、Entity 映射、Mapper SQL、索引引用、测试和文档是否同步；禁止自动重命名已有表或字段
 - [ ] 代码格式是否统一
 - [ ] 注释是否清晰必要
 - [ ] 是否有重复代码
@@ -159,10 +161,10 @@ return user.getName();
 
 ```java
 // ✗ 危险
-@Select("SELECT * FROM user WHERE name = '" + name + "'")
+@Select("SELECT * FROM sys_user WHERE user_name = '" + name + "'")
 
 // ✓ 安全
-@Select("SELECT * FROM user WHERE name = #{name}")
+@Select("SELECT * FROM sys_user WHERE user_name = #{name}")
 ```
 
 ### N+1 查询
@@ -185,10 +187,10 @@ Map<Long, User> userMap = userMapper.selectBatchIds(userIds)
 
 ```java
 // ✗ 深度分页问题
-SELECT * FROM order LIMIT 100000, 10;  // 扫描 100010 行
+SELECT * FROM sales_order LIMIT 100000, 10;  // 扫描 100010 行
 
 // ✓ 游标分页
-SELECT * FROM order WHERE id > #{lastId} ORDER BY id LIMIT 10;
+SELECT * FROM sales_order WHERE id > #{lastId} ORDER BY id LIMIT 10;
 ```
 
 ### 批量操作

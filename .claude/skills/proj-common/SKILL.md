@@ -165,7 +165,7 @@ userMapper.updateById(user);  // WHERE version = ?
 ### 悲观锁
 
 ```java
-@Select("SELECT * FROM user WHERE id = #{id} FOR UPDATE")
+@Select("SELECT * FROM sys_user WHERE id = #{id} FOR UPDATE")
 User selectForUpdate(Long id);
 ```
 

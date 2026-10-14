@@ -31,16 +31,24 @@
 - **数据库**：MySQL 8.0+ + Redis 7.0+
 - **API文档**：Knife4j 4.x
 - **测试框架**：JUnit 5 + Mockito + AssertJ
-- 
+
 ## 🚀 快速开始
 
 ### 1. 导入技能集
 
-将本项目的 `.claude/skills` 目录复制到你的项目根目录：
+先克隆本仓库；已有本地副本时可跳过克隆。以下命令适用于 Bash（Linux、macOS 或 Windows Git Bash），在 `backend-skill` 与目标项目的共同父目录执行，将 `your-project` 替换为实际项目路径：
 
 ```bash
-cp -r project-standards/.claude/skills your-project/.claude/
+git clone https://github.com/zhangloveyan/backend-skill.git
+mkdir -p your-project/.claude
+cp -r backend-skill/.claude/skills your-project/.claude/
 ```
+
+复制会合并已有技能目录并覆盖同名文件，请先备份目标项目中的自定义技能。
+
+同时将本仓库 `CLAUDE.md` 中的核心开发规范合并到目标项目根目录的 `CLAUDE.md`；目标文件不存在时可直接复制，已存在时请保留原项目规则并人工合并。导入后确认 `.claude/skills/proj-gen/SKILL.md` 和根目录 `CLAUDE.md` 均存在。
+
+数据库命名规则：新增或重命名的表、字段必须避开目标 MySQL 版本的关键字（包含保留字和非保留关键字），详见 [SQL 命名规范与校验方法](.claude/skills/proj-gen/templates/sql-reference.md)。
 
 ### 2. 常用入口
 
@@ -117,7 +125,7 @@ graph LR
 ## 📁 技能目录结构
 
 ```
-project-standards/
+backend-skill/
 ├── CLAUDE.md                    # 核心开发规范文档
 ├── README.md                    # 项目说明文档
 └── .claude/skills/              # Claude Skills 技能集
@@ -235,15 +243,14 @@ project-standards/
 
 ## 📄 许可证
 
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+本项目采用 [MIT 许可证](LICENSE)。
 
 ## 🙋‍♂️ 支持
 
 如有问题或建议，请：
 
 1. 查看 [CLAUDE.md](CLAUDE.md) 了解详细规范
-2. 提交 [Issue](https://github.com/your-username/project-standards/issues)
-3. 参与 [Discussions](https://github.com/your-username/project-standards/discussions)
+2. 提交 [Issue](https://github.com/zhangloveyan/backend-skill/issues)
 
 ---
 

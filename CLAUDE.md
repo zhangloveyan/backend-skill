@@ -108,6 +108,13 @@ com.{company}.{project}.{module}/
 ### 3.3 数据库通用字段
 每张业务表必须包含：`id, del_flag, create_by, create_time, update_by, update_time`
 
+#### 表名与字段名（强制）
+- 新增或重命名的表、字段使用小写下划线命名，并禁止与目标 MySQL 版本的任何关键字完全同名（大小写不敏感，包含保留字和非保留关键字）。
+- 使用有业务含义的名称，例如 `order` → `sales_order`、`user` → `sys_user`、`group` → `user_group`、`key` → `config_key`；按完整标识符匹配，`order_id` 等包含关键字片段的名称仍需按完整名称校验。
+- 反引号仅用于标识符引用，不能作为新表、新字段使用关键字命名的豁免。
+- 在技术方案设计、SQL/CRUD 生成和代码审查阶段执行校验，记录目标版本、校验来源和结果；详见 [.claude/skills/proj-gen/templates/sql-reference.md](.claude/skills/proj-gen/templates/sql-reference.md)。
+- 已有数据库中的冲突名称先记录影响及迁移方案；未经确认不得直接重命名已有表或字段。获准迁移后同步更新 DDL、Entity 映射、Mapper SQL、索引引用、测试和文档。
+
 ### 3.4 响应格式
 ```json
 // 对象
